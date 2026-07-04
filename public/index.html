@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Concorrentes — Ricapet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1210;
+    --surface: #121B18;
+    --surface-2: #182420;
+    --border: #223028;
+    --text: #E7ECE9;
+    --muted: #7E9A90;
+    --up: #4FBF8B;
+    --down: #C4573F;
+    --you: #D9A441;
+    --you-bg: rgba(217, 164, 65, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  header {
+    padding: 28px clamp(16px, 4vw, 48px) 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  header h1 span { color: var(--muted); font-weight: 400; }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--up);
+    box-shadow: 0 0 0 0 rgba(79,191,139,0.6);
+    animation: pulse 2.2s infinite;
+  }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(79,191,139,0.45); }
+    70%  { box-shadow: 0 0 0 7px rgba(79,191,139,0); }
+    100% { box-shadow: 0 0 0 0 rgba(79,191,139,0); }
+  }
+
+  main {
+    padding: 24px clamp(16px, 4vw, 48px) 64px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .cat-block {
+    margin-bottom: 40px;
+  }
+
+  .cat-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tables-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  @media (max-width: 800px) {
+    .tables-row { grid-template-columns: 1fr; }
+  }
+
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .table-card h3 {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr.you td { background: var(--you-bg); }
+  tr.you td:first-child { box-shadow: inset 3px 0 0 var(--you); }
+
+  .empty, .loading, .error {
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  .error { color: var(--down); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Concorrentes <span>/ Ricapet</span></h1>
+  <div class="status">
+    <span class="dot"></span>
+    <span id="lastUpdated">carregando…</span>
+  </div>
+</header>
+
+<main id="content">
+  <div class="loading">buscando último snapshot…</div>
+</main>
+
+<script>
+async function loadData() {
+  const el = document.getElementById('content');
+  const statusEl = document.getElementById('lastUpdated');
+
+  try {
+    const res = await fetch('/api/concorrentes');
+    if (!res.ok) {
+      if (res.status === 404) {
+        el.innerHTML = '<div class="empty">Nenhum dado coletado ainda. Rode o scraper local pra popular o painel.</div>';
+        statusEl.textContent = 'sem dados';
+        return;
+      }
+      throw new Error('erro ' + res.status);
+    }
+    const data = await res.json();
+    render(data);
+  } catch (err) {
+    el.innerHTML = '<div class="error">Falha ao carregar: ' + err.message + '</div>';
+    statusEl.textContent = 'erro';
+  }
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function renderTable(rows) {
+  if (!rows || rows.length === 0) {
+    return '<div class="empty" style="padding:20px;">sem linhas</div>';
+  }
+  const headers = Object.keys(rows[0]);
+  const isYouRow = (row) => Object.values(row).some(v => String(v).toUpperCase().includes('VOCÊ') || String(v).toUpperCase().includes('VOCE'));
+
+  let html = '<table><thead><tr>';
+  headers.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(row => {
+    const cls = isYouRow(row) ? ' class="you"' : '';
+    html += `<tr${cls}>`;
+    headers.forEach(h => {
+      const val = row[h] ?? '';
+      const numeric = /^[+\-]?\s?R?\$?\s?[\d.,]+%?$/.test(val);
+      html += `<td class="${numeric ? 'num' : ''}">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  return html;
+}
+
+function render(data) {
+  const el = document.getElementById('content');
+  const statusEl = document.getElementById('lastUpdated');
+  statusEl.textContent = 'atualizado em ' + fmtDate(data.coletado_em);
+
+  if (!data.categorias || data.categorias.length === 0) {
+    el.innerHTML = '<div class="empty">Snapshot vazio.</div>';
+    return;
+  }
+
+  let html = '';
+  data.categorias.forEach(cat => {
+    html += `<div class="cat-block">
+      <h2 class="cat-title">${cat.subcategoria}</h2>
+      <div class="tables-row">
+        <div class="table-card">
+          <h3>Sua posição</h3>
+          ${renderTable(cat.sua_posicao)}
+        </div>
+        <div class="table-card">
+          <h3>Melhores vendedores</h3>
+          ${renderTable(cat.melhores_vendedores)}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+loadData();
+</script>
+
+</body>
+</html>
