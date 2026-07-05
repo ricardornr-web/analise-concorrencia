@@ -51,6 +51,67 @@
 
   header h1 span { color: var(--muted); font-weight: 400; }
 
+  nav.view-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 clamp(16px, 4vw, 48px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav.view-tabs button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  nav.view-tabs button.active {
+    color: var(--text);
+    border-bottom-color: var(--you);
+  }
+
+  .hist-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .hist-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  table.hist {
+    font-size: 0.78rem;
+  }
+
+  table.hist th, table.hist td {
+    white-space: nowrap;
+  }
+
+  table.hist th:first-child,
+  table.hist td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 1;
+    max-width: 220px;
+    white-space: normal;
+  }
+
+  table.hist thead th:first-child { background: var(--surface-2); }
+
+  table.hist tr.you td:first-child { background: var(--you-bg); }
+
   .status {
     display: flex;
     align-items: center;
@@ -170,14 +231,32 @@
   </div>
 </header>
 
+<nav class="view-tabs">
+  <button id="tabAtual" class="active" onclick="mostrarView('atual')">Snapshot atual</button>
+  <button id="tabHistorico" onclick="mostrarView('historico')">Histórico</button>
+</nav>
+
 <main id="content">
   <div class="loading">buscando último snapshot…</div>
 </main>
 
 <script>
+let historicoCache = null;
+
+function mostrarView(view) {
+  document.getElementById('tabAtual').classList.toggle('active', view === 'atual');
+  document.getElementById('tabHistorico').classList.toggle('active', view === 'historico');
+  if (view === 'atual') {
+    loadData();
+  } else {
+    loadHistorico();
+  }
+}
+
 async function loadData() {
   const el = document.getElementById('content');
   const statusEl = document.getElementById('lastUpdated');
+  el.innerHTML = '<div class="loading">buscando último snapshot…</div>';
 
   try {
     const res = await fetch('/api/concorrentes');
@@ -202,12 +281,17 @@ function fmtDate(iso) {
   return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function fmtDiaCurto(diaISO) {
+  const [ano, mes, dia] = diaISO.split('-');
+  return `${dia}/${mes}`;
+}
+
 function renderTable(rows) {
   if (!rows || rows.length === 0) {
     return '<div class="empty" style="padding:20px;">sem linhas</div>';
   }
-  const headers = Object.keys(rows[0]);
-  const isYouRow = (row) => Object.values(row).some(v => String(v).toUpperCase().includes('VOCÊ') || String(v).toUpperCase().includes('VOCE'));
+  const headers = Object.keys(rows[0]).filter(h => !h.startsWith('_'));
+  const isYouRow = (row) => row['_voce'] === true;
 
   let html = '<table><thead><tr>';
   headers.forEach(h => html += `<th>${h}</th>`);
@@ -253,6 +337,82 @@ function render(data) {
         </div>
       </div>
     </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+async function loadHistorico() {
+  const el = document.getElementById('content');
+  const statusEl = document.getElementById('lastUpdated');
+  el.innerHTML = '<div class="loading">buscando histórico…</div>';
+
+  try {
+    if (!historicoCache) {
+      const res = await fetch('/api/concorrentes?action=historico');
+      if (!res.ok) throw new Error('erro ' + res.status);
+      historicoCache = await res.json();
+    }
+    renderHistorico(historicoCache);
+    statusEl.textContent = historicoCache.datas.length + ' dia(s) registrados';
+  } catch (err) {
+    el.innerHTML = '<div class="error">Falha ao carregar histórico: ' + err.message + '</div>';
+    statusEl.textContent = 'erro';
+  }
+}
+
+function renderHistorico(data) {
+  const el = document.getElementById('content');
+  const { datas, subcategorias } = data;
+
+  if (!datas || datas.length === 0) {
+    el.innerHTML = '<div class="empty">Ainda não há histórico suficiente (precisa de pelo menos 1 dia coletado).</div>';
+    return;
+  }
+
+  const nomesSub = Object.keys(subcategorias);
+  if (nomesSub.length === 0) {
+    el.innerHTML = '<div class="empty">Sem dados de posição no histórico.</div>';
+    return;
+  }
+
+  let html = '';
+  nomesSub.forEach((subNome, idx) => {
+    const vendedores = subcategorias[subNome];
+    const nomesVendedor = Object.keys(vendedores);
+
+    const ultimaData = datas[datas.length - 1];
+    nomesVendedor.sort((a, b) => {
+      const posA = parseInt(vendedores[a][ultimaData], 10);
+      const posB = parseInt(vendedores[b][ultimaData], 10);
+      if (isNaN(posA)) return 1;
+      if (isNaN(posB)) return -1;
+      return posA - posB;
+    });
+
+    html += `<div class="cat-block">
+      <h2 class="cat-title">${subNome}</h2>
+      <div class="hist-controls">
+        <span>${nomesVendedor.length} vendedor(es) · ${datas.length} dia(s)</span>
+      </div>
+      <div class="hist-table-wrap">
+        <table class="hist">
+          <thead><tr><th>Vendedor</th>`;
+
+    datas.forEach(d => html += `<th class="num">${fmtDiaCurto(d)}</th>`);
+    html += '</tr></thead><tbody>';
+
+    nomesVendedor.forEach(nome => {
+      const ehVoce = /RICAPET|VOC[EÊ]/i.test(nome);
+      html += `<tr${ehVoce ? ' class="you"' : ''}><td>${nome}</td>`;
+      datas.forEach(d => {
+        const pos = vendedores[nome][d];
+        html += `<td class="num">${pos !== undefined ? pos : '—'}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
   });
 
   el.innerHTML = html;
