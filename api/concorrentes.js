@@ -8,11 +8,13 @@
 //   POST /api/concorrentes          -> recebe o payload do scraper local e salva
 //   GET  /api/concorrentes          -> devolve o último snapshot salvo
 //   GET  /api/concorrentes?data=YYYY-MM-DD -> devolve o snapshot daquele dia
+//   GET  /api/concorrentes?action=historico -> devolve posição de cada vendedor por dia
 
 import { createClient } from "redis";
 
 const REDIS_KEY = "concorrentes:ultimo_snapshot";
 const REDIS_HISTORICO_PREFIX = "concorrentes:historico:";
+const REDIS_DATAS_SET = "concorrentes:datas";
 
 let redisClient;
 async function getRedis() {
@@ -42,14 +44,49 @@ export default async function handler(req, res) {
     const dataStr = JSON.stringify(payload);
     await redis.set(REDIS_KEY, dataStr);
 
-    const diaKey = REDIS_HISTORICO_PREFIX + payload.coletado_em.slice(0, 10);
+    const dataDia = payload.coletado_em.slice(0, 10);
+    const diaKey = REDIS_HISTORICO_PREFIX + dataDia;
     await redis.set(diaKey, dataStr);
+    await redis.sAdd(REDIS_DATAS_SET, dataDia);
 
     return res.status(200).json({ ok: true, subcategorias: payload.categorias.length });
   }
 
   if (req.method === "GET") {
-    const { data } = req.query;
+    const { data, action } = req.query;
+
+    if (action === "historico") {
+      const datas = await redis.sMembers(REDIS_DATAS_SET);
+      datas.sort();
+
+      // subcategoriaMap[subcategoria][vendedor][data] = posicao
+      const subcategoriaMap = {};
+
+      for (const dia of datas) {
+        const raw = await redis.get(REDIS_HISTORICO_PREFIX + dia);
+        if (!raw) continue;
+        const payload = JSON.parse(raw);
+
+        for (const cat of payload.categorias || []) {
+          const subNome = cat.subcategoria || "(padrão)";
+          if (!subcategoriaMap[subNome]) subcategoriaMap[subNome] = {};
+
+          for (const linha of cat.sua_posicao || []) {
+            const chaves = Object.keys(linha);
+            const vendedorKey = chaves.find((k) => k.toLowerCase().includes("vendedor"));
+            const posicaoKey = chaves.find((k) => k.toLowerCase().includes("posi"));
+            const vendedor = vendedorKey ? linha[vendedorKey] : null;
+            const posicao = posicaoKey ? linha[posicaoKey] : null;
+            if (!vendedor) continue;
+
+            if (!subcategoriaMap[subNome][vendedor]) subcategoriaMap[subNome][vendedor] = {};
+            subcategoriaMap[subNome][vendedor][dia] = posicao;
+          }
+        }
+      }
+
+      return res.status(200).json({ datas, subcategorias: subcategoriaMap });
+    }
 
     if (data) {
       const raw = await redis.get(REDIS_HISTORICO_PREFIX + data);
