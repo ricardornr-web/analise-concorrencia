@@ -125,6 +125,7 @@ export default async function handler(req, res) {
               quantidade_de_vendas: qtdKey ? linha[qtdKey] : null,
               visitas: visitasKey ? linha[visitasKey] : null,
               conversao: conversaoKey ? linha[conversaoKey] : null,
+              imagem: linha._imagem || null,
             };
           });
         }
