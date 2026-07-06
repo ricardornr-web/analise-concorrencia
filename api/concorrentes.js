@@ -8,7 +8,6 @@
 //   POST /api/concorrentes          -> recebe o payload do scraper local e salva
 //   GET  /api/concorrentes          -> devolve o último snapshot salvo
 //   GET  /api/concorrentes?data=YYYY-MM-DD -> devolve o snapshot daquele dia
-//   GET  /api/concorrentes?action=historico -> devolve posição de cada vendedor por dia
 
 import { createClient } from "redis";
 
@@ -86,6 +85,41 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ datas, subcategorias: subcategoriaMap });
+    }
+
+    if (action === "historico_concorrentes") {
+      const datas = await redis.sMembers(REDIS_DATAS_SET);
+      datas.sort();
+
+      // concorrentesMap[nomeConcorrente][nomeProduto][data] = posicao (ranking do dia)
+      const concorrentesMap = {};
+
+      for (const dia of datas) {
+        const raw = await redis.get(REDIS_HISTORICO_PREFIX + dia);
+        if (!raw) continue;
+        const payload = JSON.parse(raw);
+
+        for (const comp of payload.concorrentes || []) {
+          if (!concorrentesMap[comp.nome]) concorrentesMap[comp.nome] = {};
+
+          (comp.produtos || []).forEach((linha, idx) => {
+            const chaves = Object.keys(linha);
+            const anuncioKey =
+              chaves.find((k) => k.toLowerCase().includes("núncio")) ||
+              chaves.find((k) => k.toLowerCase().includes("anuncio")) ||
+              chaves[0];
+            const nomeProduto = anuncioKey ? linha[anuncioKey] : null;
+            if (!nomeProduto) return;
+
+            if (!concorrentesMap[comp.nome][nomeProduto]) {
+              concorrentesMap[comp.nome][nomeProduto] = {};
+            }
+            concorrentesMap[comp.nome][nomeProduto][dia] = idx + 1;
+          });
+        }
+      }
+
+      return res.status(200).json({ datas, concorrentes: concorrentesMap });
     }
 
     if (data) {
