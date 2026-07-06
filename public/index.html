@@ -229,6 +229,91 @@
   }
 
   .error { color: var(--down); }
+
+  .comp-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+
+  .comp-pills button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .comp-pills button.active {
+    background: var(--you-bg);
+    border-color: var(--you);
+    color: var(--text);
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+
+  @media (max-width: 700px) {
+    .kpi-row { grid-template-columns: 1fr; }
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .kpi-card .kpi-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .kpi-card .kpi-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .kpi-card .kpi-delta {
+    font-size: 0.78rem;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .kpi-delta.up { color: var(--up); }
+  .kpi-delta.down { color: var(--down); }
+  .kpi-delta.flat { color: var(--muted); }
+
+  .trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    margin-left: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .trend.up { color: var(--up); }
+  .trend.down { color: var(--down); }
+  .trend.flat { color: var(--muted); }
+
+  td.produto-cell {
+    max-width: 320px;
+    white-space: normal;
+  }
 </style>
 </head>
 <body>
@@ -438,6 +523,7 @@ function renderHistorico(data) {
 
 let concorrentesSnapshotCache = null;
 let concorrentesHistoricoCache = null;
+let concorrenteAtivoNome = null;
 
 async function loadConcorrentes() {
   const el = document.getElementById('content');
@@ -453,7 +539,7 @@ async function loadConcorrentes() {
       const res2 = await fetch('/api/concorrentes?action=historico_concorrentes');
       if (res2.ok) concorrentesHistoricoCache = await res2.json();
     }
-    renderConcorrentes(concorrentesSnapshotCache, concorrentesHistoricoCache);
+    renderPainelConcorrentes();
     if (concorrentesHistoricoCache) {
       statusEl.textContent = concorrentesHistoricoCache.datas.length + ' dia(s) registrados';
     }
@@ -463,67 +549,205 @@ async function loadConcorrentes() {
   }
 }
 
-function renderConcorrentes(snapshot, historico) {
+function selecionarConcorrente(nome) {
+  concorrenteAtivoNome = nome;
+  renderPainelConcorrentes();
+}
+
+// Converte texto tipo "+ R$ 16.600" ou "10,7%" ou "+ 240" em número
+function parseNumero(str) {
+  if (str === undefined || str === null) return null;
+  let s = String(str).trim();
+  if (s === '' || s === '—') return null;
+  const negativo = /^-/.test(s);
+  s = s.replace(/^[+\-]\s?/, '');
+  s = s.replace(/R\$\s?/g, '').replace(/%/g, '');
+  s = s.replace(/\./g, '').replace(/,/g, '.');
+  const n = parseFloat(s);
+  if (isNaN(n)) return null;
+  return negativo ? -n : n;
+}
+
+function calcDelta(valorAntigo, valorNovo) {
+  if (valorAntigo === null || valorNovo === null) return null;
+  if (valorAntigo === 0) return valorNovo === 0 ? 0 : null;
+  return ((valorNovo - valorAntigo) / valorAntigo) * 100;
+}
+
+function trendHTML(delta, eraZero) {
+  if (delta === null) {
+    return eraZero ? '<span class="trend up">▲ novo</span>' : '';
+  }
+  const arrow = delta > 0.5 ? '▲' : delta < -0.5 ? '▼' : '▪';
+  const cls = delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : 'flat';
+  const texto = (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+  return `<span class="trend ${cls}">${arrow} ${texto}</span>`;
+}
+
+function acharChave(obj, testFn) {
+  return Object.keys(obj).find(testFn) || null;
+}
+
+function extrairMetricasSnapshot(produto) {
+  const vendasKey = acharChave(produto, k => k.toLowerCase().includes('venda') && k.toLowerCase().includes('brut'));
+  const qtdKey = acharChave(produto, k => k.toLowerCase().includes('quantidade'));
+  const visitasKey = acharChave(produto, k => k.toLowerCase().includes('visita'));
+  const conversaoKey = acharChave(produto, k => k.toLowerCase().includes('convers'));
+  const anuncioKey = acharChave(produto, k => k.toLowerCase().includes('núncio') || k.toLowerCase().includes('anuncio'));
+
+  return {
+    nome: anuncioKey ? produto[anuncioKey] : Object.values(produto)[0],
+    vendas_brutas: vendasKey ? produto[vendasKey] : null,
+    quantidade_de_vendas: qtdKey ? produto[qtdKey] : null,
+    visitas: visitasKey ? produto[visitasKey] : null,
+    conversao: conversaoKey ? produto[conversaoKey] : null,
+  };
+}
+
+function kpiCard(label, valorHoje, valorOntem, temOntem, prefixo) {
+  let deltaHtml = '<div class="kpi-delta flat">aguardando 2º dia p/ comparar</div>';
+  if (temOntem) {
+    const delta = calcDelta(valorOntem, valorHoje);
+    if (delta === null) {
+      deltaHtml = '<div class="kpi-delta up">▲ novo</div>';
+    } else {
+      const cls = delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : 'flat';
+      const arrow = delta > 0.5 ? '▲' : delta < -0.5 ? '▼' : '▪';
+      deltaHtml = `<div class="kpi-delta ${cls}">${arrow} ${(delta > 0 ? '+' : '')}${delta.toFixed(1)}% vs dia anterior</div>`;
+    }
+  }
+  return `<div class="kpi-card">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${prefixo}${Math.round(valorHoje).toLocaleString('pt-BR')}</div>
+    ${deltaHtml}
+  </div>`;
+}
+
+function renderPainelConcorrentes() {
   const el = document.getElementById('content');
+  const snapshot = concorrentesSnapshotCache;
+  const historico = concorrentesHistoricoCache;
   const concorrentesAtuais = (snapshot && snapshot.concorrentes) || [];
   const historicoMap = (historico && historico.concorrentes) || {};
   const datas = (historico && historico.datas) || [];
 
-  const nomes = new Set([
+  const nomes = Array.from(new Set([
     ...concorrentesAtuais.map(c => c.nome),
     ...Object.keys(historicoMap),
-  ]);
+  ]));
 
-  if (nomes.size === 0) {
+  if (nomes.length === 0) {
     el.innerHTML = '<div class="empty">Nenhum concorrente coletado ainda.</div>';
     return;
   }
 
-  let html = '';
-  nomes.forEach(nome => {
-    const compAtual = concorrentesAtuais.find(c => c.nome === nome);
-    const produtosAtuais = compAtual ? compAtual.produtos : [];
-    const produtosHist = historicoMap[nome] || {};
-    const nomesProdutoHist = Object.keys(produtosHist);
+  if (!concorrenteAtivoNome || !nomes.includes(concorrenteAtivoNome)) {
+    concorrenteAtivoNome = nomes[0];
+  }
 
-    html += `<div class="cat-block">
-      <h2 class="cat-title">${nome}</h2>
-      <div class="table-card" style="margin-bottom:16px;">
-        <h3>Anúncios (snapshot atual)</h3>
-        ${renderTable(produtosAtuais)}
-      </div>`;
+  let pillsHtml = '<div class="comp-pills">';
+  nomes.forEach(n => {
+    const ativo = n === concorrenteAtivoNome ? ' active' : '';
+    pillsHtml += `<button class="${ativo}" onclick="selecionarConcorrente(${JSON.stringify(n)})">${n}</button>`;
+  });
+  pillsHtml += '</div>';
 
-    if (nomesProdutoHist.length > 0) {
-      html += `<div class="hist-controls"><span>Ranking por dia · ${datas.length} dia(s)</span></div>
-      <div class="hist-table-wrap">
-        <table class="hist">
-          <thead><tr><th>Produto</th>`;
-      datas.forEach(d => html += `<th class="num">${fmtDiaCurto(d)}</th>`);
-      html += '</tr></thead><tbody>';
+  const nome = concorrenteAtivoNome;
+  const compAtual = concorrentesAtuais.find(c => c.nome === nome);
+  const produtosAtuaisBrutos = compAtual ? compAtual.produtos : [];
+  const produtosHist = historicoMap[nome] || {};
+  const nomesProdutoHist = Object.keys(produtosHist);
 
-      const ultimaData = datas[datas.length - 1];
-      nomesProdutoHist.sort((a, b) => {
-        const posA = produtosHist[a][ultimaData];
-        const posB = produtosHist[b][ultimaData];
-        if (posA === undefined) return 1;
-        if (posB === undefined) return -1;
-        return posA - posB;
-      });
+  const ultimaData = datas[datas.length - 1];
+  const penultimaData = datas.length > 1 ? datas[datas.length - 2] : null;
+  const temOntem = !!penultimaData;
 
-      nomesProdutoHist.forEach(produto => {
-        html += `<tr><td>${produto}</td>`;
-        datas.forEach(d => {
-          const pos = produtosHist[produto][d];
-          html += `<td class="num">${pos !== undefined ? pos : '—'}</td>`;
-        });
-        html += '</tr>';
-      });
+  let produtos;
+  if (nomesProdutoHist.length > 0 && ultimaData) {
+    produtos = nomesProdutoHist.map(p => ({
+      nome: p,
+      hoje: produtosHist[p][ultimaData] || {},
+      ontem: penultimaData ? (produtosHist[p][penultimaData] || null) : null,
+    }));
+  } else {
+    produtos = produtosAtuaisBrutos.map(p => {
+      const m = extrairMetricasSnapshot(p);
+      return { nome: m.nome, hoje: m, ontem: null };
+    });
+  }
 
-      html += '</tbody></table></div>';
+  // calcula delta de vendas brutas pra ordenar por crescimento
+  produtos.forEach(p => {
+    const vHoje = parseNumero(p.hoje.vendas_brutas);
+    const vOntem = p.ontem ? parseNumero(p.ontem.vendas_brutas) : null;
+    p._vHoje = vHoje || 0;
+    p._delta = (vOntem !== null && vHoje !== null) ? calcDelta(vOntem, vHoje) : null;
+  });
+  produtos.sort((a, b) => {
+    if (a._delta === null && b._delta === null) return b._vHoje - a._vHoje;
+    if (a._delta === null) return 1;
+    if (b._delta === null) return -1;
+    return b._delta - a._delta;
+  });
+
+  // KPIs agregados do concorrente inteiro
+  let somaVendasHoje = 0, somaVendasOntem = 0;
+  let somaQtdHoje = 0, somaQtdOntem = 0;
+  let somaVisitasHoje = 0, somaVisitasOntem = 0;
+  produtos.forEach(p => {
+    somaVendasHoje += parseNumero(p.hoje.vendas_brutas) || 0;
+    somaQtdHoje += parseNumero(p.hoje.quantidade_de_vendas) || 0;
+    somaVisitasHoje += parseNumero(p.hoje.visitas) || 0;
+    if (p.ontem) {
+      somaVendasOntem += parseNumero(p.ontem.vendas_brutas) || 0;
+      somaQtdOntem += parseNumero(p.ontem.quantidade_de_vendas) || 0;
+      somaVisitasOntem += parseNumero(p.ontem.visitas) || 0;
+    }
+  });
+
+  let html = pillsHtml;
+  html += `<div class="kpi-row">
+    ${kpiCard('Vendas brutas (soma)', somaVendasHoje, somaVendasOntem, temOntem, 'R$ ')}
+    ${kpiCard('Quantidade de vendas (soma)', somaQtdHoje, somaQtdOntem, temOntem, '')}
+    ${kpiCard('Visitas (soma)', somaVisitasHoje, somaVisitasOntem, temOntem, '')}
+  </div>`;
+
+  html += `<div class="table-card">
+    <h3>Produtos — ordenado por crescimento em vendas brutas</h3>
+    <table class="prod-table">
+      <thead><tr><th>Produto</th><th>Vendas brutas</th><th>Quantidade</th><th>Visitas</th><th>Conversão</th></tr></thead>
+      <tbody>`;
+
+  produtos.forEach(p => {
+    const vHoje = p.hoje.vendas_brutas ?? '—';
+    const qHoje = p.hoje.quantidade_de_vendas ?? '—';
+    const visHoje = p.hoje.visitas ?? '—';
+    const cHoje = p.hoje.conversao ?? '—';
+
+    let trendVendas = '', trendQtd = '', trendVis = '';
+    if (p.ontem) {
+      const vOntemNum = parseNumero(p.ontem.vendas_brutas);
+      const qOntemNum = parseNumero(p.ontem.quantidade_de_vendas);
+      const visOntemNum = parseNumero(p.ontem.visitas);
+      trendVendas = trendHTML(calcDelta(vOntemNum, parseNumero(vHoje)), vOntemNum === 0);
+      trendQtd = trendHTML(calcDelta(qOntemNum, parseNumero(qHoje)), qOntemNum === 0);
+      trendVis = trendHTML(calcDelta(visOntemNum, parseNumero(visHoje)), visOntemNum === 0);
     }
 
-    html += '</div>';
+    html += `<tr>
+      <td class="produto-cell">${p.nome}</td>
+      <td class="num">${vHoje}${trendVendas}</td>
+      <td class="num">${qHoje}${trendQtd}</td>
+      <td class="num">${visHoje}${trendVis}</td>
+      <td class="num">${cHoje}</td>
+    </tr>`;
   });
+
+  html += '</tbody></table></div>';
+
+  if (!temOntem) {
+    html += '<p style="color:var(--muted);font-size:0.82rem;margin-top:16px;">As setas de crescimento/queda aparecem a partir do 2º dia de coleta (comparando com o dia anterior).</p>';
+  }
 
   el.innerHTML = html;
 }
