@@ -91,7 +91,7 @@ export default async function handler(req, res) {
       const datas = await redis.sMembers(REDIS_DATAS_SET);
       datas.sort();
 
-      // concorrentesMap[nomeConcorrente][nomeProduto][data] = posicao (ranking do dia)
+      // concorrentesMap[nomeConcorrente][nomeProduto][data] = { vendas_brutas, quantidade_de_vendas, visitas, conversao, posicao }
       const concorrentesMap = {};
 
       for (const dia of datas) {
@@ -111,10 +111,21 @@ export default async function handler(req, res) {
             const nomeProduto = anuncioKey ? linha[anuncioKey] : null;
             if (!nomeProduto) return;
 
+            const vendasKey = chaves.find((k) => k.toLowerCase().includes("venda") && k.toLowerCase().includes("brut"));
+            const qtdKey = chaves.find((k) => k.toLowerCase().includes("quantidade"));
+            const visitasKey = chaves.find((k) => k.toLowerCase().includes("visita"));
+            const conversaoKey = chaves.find((k) => k.toLowerCase().includes("convers"));
+
             if (!concorrentesMap[comp.nome][nomeProduto]) {
               concorrentesMap[comp.nome][nomeProduto] = {};
             }
-            concorrentesMap[comp.nome][nomeProduto][dia] = idx + 1;
+            concorrentesMap[comp.nome][nomeProduto][dia] = {
+              posicao: idx + 1,
+              vendas_brutas: vendasKey ? linha[vendasKey] : null,
+              quantidade_de_vendas: qtdKey ? linha[qtdKey] : null,
+              visitas: visitasKey ? linha[visitasKey] : null,
+              conversao: conversaoKey ? linha[conversaoKey] : null,
+            };
           });
         }
       }
