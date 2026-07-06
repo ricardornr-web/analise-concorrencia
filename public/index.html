@@ -5,19 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Concorrentes — Ricapet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0B1210;
-    --surface: #121B18;
-    --surface-2: #182420;
-    --border: #223028;
-    --text: #E7ECE9;
-    --muted: #7E9A90;
-    --up: #4FBF8B;
-    --down: #C4573F;
-    --you: #D9A441;
-    --you-bg: rgba(217, 164, 65, 0.08);
+    --bg: #F6F7F4;
+    --surface: #FFFFFF;
+    --surface-2: #F0F2ED;
+    --border: #E4E7E0;
+    --text: #1E2924;
+    --muted: #74827A;
+    --up: #1E9E74;
+    --up-bg: #E4F5EE;
+    --down: #D65F45;
+    --down-bg: #FBEAE5;
+    --you: #C98A2E;
+    --you-bg: #FBF1E0;
+    --shadow-sm: 0 1px 2px rgba(30, 41, 36, 0.05);
+    --shadow-md: 0 4px 16px rgba(30, 41, 36, 0.06);
   }
 
   * { box-sizing: border-box; }
@@ -26,7 +30,7 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -34,6 +38,7 @@
 
   header {
     padding: 28px clamp(16px, 4vw, 48px) 20px;
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: baseline;
@@ -43,6 +48,7 @@
   }
 
   header h1 {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 1.4rem;
     font-weight: 700;
     margin: 0;
@@ -55,6 +61,7 @@
     display: flex;
     gap: 4px;
     padding: 0 clamp(16px, 4vw, 48px);
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
 
@@ -97,7 +104,9 @@
   .hist-table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    background: var(--surface);
   }
 
   table.hist {
@@ -134,14 +143,14 @@
   .dot {
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--up);
-    box-shadow: 0 0 0 0 rgba(79,191,139,0.6);
+    box-shadow: 0 0 0 0 rgba(30,158,116,0.6);
     animation: pulse 2.2s infinite;
   }
 
   @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(79,191,139,0.45); }
-    70%  { box-shadow: 0 0 0 7px rgba(79,191,139,0); }
-    100% { box-shadow: 0 0 0 0 rgba(79,191,139,0); }
+    0%   { box-shadow: 0 0 0 0 rgba(30,158,116,0.45); }
+    70%  { box-shadow: 0 0 0 7px rgba(30,158,116,0); }
+    100% { box-shadow: 0 0 0 0 rgba(30,158,116,0); }
   }
 
   main {
@@ -155,6 +164,7 @@
   }
 
   .cat-title {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -178,13 +188,15 @@
   .table-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
   }
 
   .table-card h3 {
+    font-family: 'Space Grotesk', sans-serif;
     margin: 0;
-    padding: 12px 16px;
+    padding: 14px 18px;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--muted);
@@ -195,22 +207,22 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.82rem;
+    font-size: 0.83rem;
   }
 
   th {
     text-align: left;
-    padding: 8px 12px;
+    padding: 10px 14px;
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--muted);
-    font-weight: 500;
+    font-weight: 600;
     border-bottom: 1px solid var(--border);
   }
 
   td {
-    padding: 9px 12px;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
     vertical-align: top;
   }
@@ -241,17 +253,24 @@
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--muted);
-    padding: 8px 14px;
+    padding: 8px 16px;
     border-radius: 20px;
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
   }
 
   .comp-pills button.active {
     background: var(--you-bg);
     border-color: var(--you);
+    color: #8A5D1E;
+  }
+
+  .comp-pills button:hover:not(.active) {
+    border-color: var(--muted);
     color: var(--text);
   }
 
@@ -269,11 +288,19 @@
   .kpi-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .kpi-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--you);
   }
 
   .kpi-card .kpi-label {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -288,31 +315,99 @@
   }
 
   .kpi-card .kpi-delta {
-    font-size: 0.78rem;
-    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.76rem;
+    margin-top: 10px;
     font-family: 'JetBrains Mono', monospace;
+    padding: 3px 9px;
+    border-radius: 20px;
   }
 
-  .kpi-delta.up { color: var(--up); }
-  .kpi-delta.down { color: var(--down); }
-  .kpi-delta.flat { color: var(--muted); }
+  .kpi-delta.up { color: var(--up); background: var(--up-bg); }
+  .kpi-delta.down { color: var(--down); background: var(--down-bg); }
+  .kpi-delta.flat { color: var(--muted); background: var(--surface-2); }
 
   .trend {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
+    font-weight: 600;
     margin-left: 6px;
     font-family: 'JetBrains Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 20px;
   }
 
-  .trend.up { color: var(--up); }
-  .trend.down { color: var(--down); }
-  .trend.flat { color: var(--muted); }
+  .trend.up { color: var(--up); background: var(--up-bg); }
+  .trend.down { color: var(--down); background: var(--down-bg); }
+  .trend.flat { color: var(--muted); background: var(--surface-2); }
 
   td.produto-cell {
     max-width: 320px;
     white-space: normal;
+  }
+
+  .produto-linha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .produto-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .spark {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  .spark-wrap.up { color: var(--up); }
+  .spark-wrap.down { color: var(--down); }
+  .spark-wrap.flat { color: var(--muted); }
+
+  .table-card h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .prod-table tbody tr:hover td {
+    background: var(--surface-2);
+  }
+
+  .metric-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 4px 0 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metric-tabs button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  .metric-tabs button.active {
+    color: var(--text);
+    border-bottom-color: var(--you);
   }
 </style>
 </head>
@@ -524,6 +619,19 @@ function renderHistorico(data) {
 let concorrentesSnapshotCache = null;
 let concorrentesHistoricoCache = null;
 let concorrenteAtivoNome = null;
+let metricaAtivaConcorrente = 'vendas_brutas';
+
+const METRICAS_CONCORRENTE = [
+  { key: 'vendas_brutas', label: 'Vendas brutas' },
+  { key: 'quantidade_de_vendas', label: 'Quantidade' },
+  { key: 'visitas', label: 'Visitas' },
+  { key: 'conversao', label: 'Conversão' },
+];
+
+function selecionarMetricaConcorrente(key) {
+  metricaAtivaConcorrente = key;
+  renderPainelConcorrentes();
+}
 
 async function loadConcorrentes() {
   const el = document.getElementById('content');
@@ -584,6 +692,71 @@ function trendHTML(delta, eraZero) {
   return `<span class="trend ${cls}">${arrow} ${texto}</span>`;
 }
 
+function renderTabelaMetrica(nomesProdutoHist, produtosHist, datas, metricKey) {
+  const nomes = [...nomesProdutoHist];
+  const ultimaData = datas[datas.length - 1];
+  nomes.sort((a, b) => {
+    const va = parseNumero((produtosHist[a][ultimaData] || {})[metricKey]);
+    const vb = parseNumero((produtosHist[b][ultimaData] || {})[metricKey]);
+    return (vb || 0) - (va || 0);
+  });
+
+  let html = '<div class="hist-table-wrap"><table class="hist"><thead><tr><th>Produto</th>';
+  datas.forEach(d => html += `<th class="num">${fmtDiaCurto(d)}</th>`);
+  html += '</tr></thead><tbody>';
+
+  nomes.forEach(nome => {
+    // procura a imagem mais recente disponível (do dia mais novo pro mais antigo)
+    let imagemUrl = null;
+    for (let i = datas.length - 1; i >= 0; i--) {
+      const reg = (produtosHist[nome] || {})[datas[i]];
+      if (reg && reg.imagem) { imagemUrl = reg.imagem; break; }
+    }
+    const thumbHtml = imagemUrl
+      ? `<img class="produto-thumb" src="${imagemUrl}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="produto-thumb"></div>`;
+
+    html += `<tr><td class="produto-cell"><div class="produto-linha">${thumbHtml}<span>${nome}</span></div></td>`;
+    let valorAnterior = null;
+    datas.forEach(d => {
+      const registro = (produtosHist[nome] || {})[d];
+      const bruto = registro ? registro[metricKey] : undefined;
+      const valorNum = parseNumero(bruto);
+      let seta = '';
+      if (valorAnterior !== null) {
+        seta = trendHTML(calcDelta(valorAnterior, valorNum), valorAnterior === 0);
+      }
+      html += `<td class="num">${bruto !== undefined && bruto !== null ? bruto : '—'}${seta}</td>`;
+      if (valorNum !== null) valorAnterior = valorNum;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function sparklineSVG(valores, width, height) {
+  width = width || 90;
+  height = height || 26;
+  const vals = valores.filter(v => v !== null && v !== undefined);
+  if (vals.length < 2) return '';
+  const max = Math.max(...vals);
+  const min = Math.min(...vals);
+  const range = (max - min) || 1;
+  const stepX = width / (valores.length - 1);
+  let ultimoY = height / 2;
+  const pontos = valores.map((v, i) => {
+    const x = i * stepX;
+    const y = (v === null || v === undefined) ? ultimoY : height - ((v - min) / range) * height;
+    ultimoY = y;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" preserveAspectRatio="none">
+    <polyline points="${pontos}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
 function acharChave(obj, testFn) {
   return Object.keys(obj).find(testFn) || null;
 }
@@ -601,24 +774,34 @@ function extrairMetricasSnapshot(produto) {
     quantidade_de_vendas: qtdKey ? produto[qtdKey] : null,
     visitas: visitasKey ? produto[visitasKey] : null,
     conversao: conversaoKey ? produto[conversaoKey] : null,
+    imagem: produto._imagem || null,
   };
 }
 
-function kpiCard(label, valorHoje, valorOntem, temOntem, prefixo) {
+function kpiCard(label, valorHoje, valorOntem, temOntem, prefixo, serie) {
   let deltaHtml = '<div class="kpi-delta flat">aguardando 2º dia p/ comparar</div>';
+  let corTendencia = 'flat';
   if (temOntem) {
     const delta = calcDelta(valorOntem, valorHoje);
     if (delta === null) {
       deltaHtml = '<div class="kpi-delta up">▲ novo</div>';
+      corTendencia = 'up';
     } else {
       const cls = delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : 'flat';
       const arrow = delta > 0.5 ? '▲' : delta < -0.5 ? '▼' : '▪';
       deltaHtml = `<div class="kpi-delta ${cls}">${arrow} ${(delta > 0 ? '+' : '')}${delta.toFixed(1)}% vs dia anterior</div>`;
+      corTendencia = cls;
     }
   }
+  const sparkHtml = serie && serie.length >= 2
+    ? `<span class="spark-wrap ${corTendencia}">${sparklineSVG(serie)}</span>`
+    : '';
   return `<div class="kpi-card">
     <div class="kpi-label">${label}</div>
-    <div class="kpi-value">${prefixo}${Math.round(valorHoje).toLocaleString('pt-BR')}</div>
+    <div class="kpi-value" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>${prefixo}${Math.round(valorHoje).toLocaleString('pt-BR')}</span>
+      ${sparkHtml}
+    </div>
     ${deltaHtml}
   </div>`;
 }
@@ -648,7 +831,8 @@ function renderPainelConcorrentes() {
   let pillsHtml = '<div class="comp-pills">';
   nomes.forEach(n => {
     const ativo = n === concorrenteAtivoNome ? ' active' : '';
-    pillsHtml += `<button class="${ativo}" onclick="selecionarConcorrente(${JSON.stringify(n)})">${n}</button>`;
+    const nomeEscapado = n.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    pillsHtml += `<button class="${ativo}" data-nome="${nomeEscapado}">${n}</button>`;
   });
   pillsHtml += '</div>';
 
@@ -690,7 +874,7 @@ function renderPainelConcorrentes() {
     return b._delta - a._delta;
   });
 
-  // KPIs agregados do concorrente inteiro
+  // KPIs agregados do concorrente inteiro (+ séries diárias pros sparklines)
   let somaVendasHoje = 0, somaVendasOntem = 0;
   let somaQtdHoje = 0, somaQtdOntem = 0;
   let somaVisitasHoje = 0, somaVisitasOntem = 0;
@@ -705,51 +889,72 @@ function renderPainelConcorrentes() {
     }
   });
 
-  let html = pillsHtml;
-  html += `<div class="kpi-row">
-    ${kpiCard('Vendas brutas (soma)', somaVendasHoje, somaVendasOntem, temOntem, 'R$ ')}
-    ${kpiCard('Quantidade de vendas (soma)', somaQtdHoje, somaQtdOntem, temOntem, '')}
-    ${kpiCard('Visitas (soma)', somaVisitasHoje, somaVisitasOntem, temOntem, '')}
-  </div>`;
-
-  html += `<div class="table-card">
-    <h3>Produtos — ordenado por crescimento em vendas brutas</h3>
-    <table class="prod-table">
-      <thead><tr><th>Produto</th><th>Vendas brutas</th><th>Quantidade</th><th>Visitas</th><th>Conversão</th></tr></thead>
-      <tbody>`;
-
-  produtos.forEach(p => {
-    const vHoje = p.hoje.vendas_brutas ?? '—';
-    const qHoje = p.hoje.quantidade_de_vendas ?? '—';
-    const visHoje = p.hoje.visitas ?? '—';
-    const cHoje = p.hoje.conversao ?? '—';
-
-    let trendVendas = '', trendQtd = '', trendVis = '';
-    if (p.ontem) {
-      const vOntemNum = parseNumero(p.ontem.vendas_brutas);
-      const qOntemNum = parseNumero(p.ontem.quantidade_de_vendas);
-      const visOntemNum = parseNumero(p.ontem.visitas);
-      trendVendas = trendHTML(calcDelta(vOntemNum, parseNumero(vHoje)), vOntemNum === 0);
-      trendQtd = trendHTML(calcDelta(qOntemNum, parseNumero(qHoje)), qOntemNum === 0);
-      trendVis = trendHTML(calcDelta(visOntemNum, parseNumero(visHoje)), visOntemNum === 0);
-    }
-
-    html += `<tr>
-      <td class="produto-cell">${p.nome}</td>
-      <td class="num">${vHoje}${trendVendas}</td>
-      <td class="num">${qHoje}${trendQtd}</td>
-      <td class="num">${visHoje}${trendVis}</td>
-      <td class="num">${cHoje}</td>
-    </tr>`;
+  const serieVendas = datas.map(d => {
+    let soma = 0;
+    nomesProdutoHist.forEach(p => { soma += parseNumero((produtosHist[p][d] || {}).vendas_brutas) || 0; });
+    return soma;
+  });
+  const serieQtd = datas.map(d => {
+    let soma = 0;
+    nomesProdutoHist.forEach(p => { soma += parseNumero((produtosHist[p][d] || {}).quantidade_de_vendas) || 0; });
+    return soma;
+  });
+  const serieVisitas = datas.map(d => {
+    let soma = 0;
+    nomesProdutoHist.forEach(p => { soma += parseNumero((produtosHist[p][d] || {}).visitas) || 0; });
+    return soma;
   });
 
-  html += '</tbody></table></div>';
+  let html = pillsHtml;
+  html += `<div class="kpi-row">
+    ${kpiCard('Vendas brutas (soma)', somaVendasHoje, somaVendasOntem, temOntem, 'R$ ', serieVendas)}
+    ${kpiCard('Quantidade de vendas (soma)', somaQtdHoje, somaQtdOntem, temOntem, '', serieQtd)}
+    ${kpiCard('Visitas (soma)', somaVisitasHoje, somaVisitasOntem, temOntem, '', serieVisitas)}
+  </div>`;
+
+  // monta uma estrutura produtosHist "efetiva" mesmo se só houver 1 dia
+  // (usa o snapshot atual como único dia, pra reaproveitar a mesma tabela)
+  let produtosHistEfetivo = produtosHist;
+  let datasEfetivas = datas;
+  let nomesProdutoEfetivo = nomesProdutoHist;
+  if (nomesProdutoHist.length === 0 && produtosAtuaisBrutos.length > 0) {
+    const hojeLabel = new Date().toISOString().slice(0, 10);
+    produtosHistEfetivo = {};
+    produtosAtuaisBrutos.forEach(p => {
+      const m = extrairMetricasSnapshot(p);
+      produtosHistEfetivo[m.nome] = { [hojeLabel]: m };
+    });
+    datasEfetivas = [hojeLabel];
+    nomesProdutoEfetivo = Object.keys(produtosHistEfetivo);
+  }
+
+  let metricTabsHtml = '<div class="metric-tabs">';
+  METRICAS_CONCORRENTE.forEach(m => {
+    const ativo = m.key === metricaAtivaConcorrente ? ' active' : '';
+    metricTabsHtml += `<button class="${ativo}" data-metrica="${m.key}">${m.label}</button>`;
+  });
+  metricTabsHtml += '</div>';
+
+  const metricaAtual = METRICAS_CONCORRENTE.find(m => m.key === metricaAtivaConcorrente) || METRICAS_CONCORRENTE[0];
+
+  html += `<div class="table-card" style="background:transparent;border:none;">
+    <h3 style="background:none;border:none;padding:0 0 4px;">Produtos por dia — ${metricaAtual.label} · ordem cronológica</h3>
+    ${metricTabsHtml}
+    ${renderTabelaMetrica(nomesProdutoEfetivo, produtosHistEfetivo, datasEfetivas, metricaAtivaConcorrente)}
+  </div>`;
 
   if (!temOntem) {
-    html += '<p style="color:var(--muted);font-size:0.82rem;margin-top:16px;">As setas de crescimento/queda aparecem a partir do 2º dia de coleta (comparando com o dia anterior).</p>';
+    html += '<p style="color:var(--muted);font-size:0.82rem;margin-top:16px;">As setas de crescimento/queda em cada célula aparecem a partir do 2º dia de coleta.</p>';
   }
 
   el.innerHTML = html;
+
+  el.querySelectorAll('.comp-pills button').forEach(btn => {
+    btn.addEventListener('click', () => selecionarConcorrente(btn.dataset.nome));
+  });
+  el.querySelectorAll('.metric-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => selecionarMetricaConcorrente(btn.dataset.metrica));
+  });
 }
 
 loadData();
