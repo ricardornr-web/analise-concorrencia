@@ -84,6 +84,16 @@
     color: var(--muted);
   }
 
+  .hist-controls select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+  }
+
   .hist-table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border);
@@ -234,6 +244,7 @@
 <nav class="view-tabs">
   <button id="tabAtual" class="active" onclick="mostrarView('atual')">Snapshot atual</button>
   <button id="tabHistorico" onclick="mostrarView('historico')">Histórico</button>
+  <button id="tabConcorrentes" onclick="mostrarView('concorrentes')">Concorrentes</button>
 </nav>
 
 <main id="content">
@@ -246,10 +257,13 @@ let historicoCache = null;
 function mostrarView(view) {
   document.getElementById('tabAtual').classList.toggle('active', view === 'atual');
   document.getElementById('tabHistorico').classList.toggle('active', view === 'historico');
+  document.getElementById('tabConcorrentes').classList.toggle('active', view === 'concorrentes');
   if (view === 'atual') {
     loadData();
-  } else {
+  } else if (view === 'historico') {
     loadHistorico();
+  } else {
+    loadConcorrentes();
   }
 }
 
@@ -282,6 +296,7 @@ function fmtDate(iso) {
 }
 
 function fmtDiaCurto(diaISO) {
+  // diaISO no formato YYYY-MM-DD -> DD/MM
   const [ano, mes, dia] = diaISO.split('-');
   return `${dia}/${mes}`;
 }
@@ -381,6 +396,7 @@ function renderHistorico(data) {
     const vendedores = subcategorias[subNome];
     const nomesVendedor = Object.keys(vendedores);
 
+    // ordena pela posição mais recente (menor primeiro), você sempre no topo
     const ultimaData = datas[datas.length - 1];
     nomesVendedor.sort((a, b) => {
       const posA = parseInt(vendedores[a][ultimaData], 10);
@@ -389,6 +405,8 @@ function renderHistorico(data) {
       if (isNaN(posB)) return -1;
       return posA - posB;
     });
+
+    const selectId = `sel-${idx}`;
 
     html += `<div class="cat-block">
       <h2 class="cat-title">${subNome}</h2>
@@ -413,6 +431,98 @@ function renderHistorico(data) {
     });
 
     html += '</tbody></table></div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+let concorrentesSnapshotCache = null;
+let concorrentesHistoricoCache = null;
+
+async function loadConcorrentes() {
+  const el = document.getElementById('content');
+  const statusEl = document.getElementById('lastUpdated');
+  el.innerHTML = '<div class="loading">buscando dados dos concorrentes…</div>';
+
+  try {
+    if (!concorrentesSnapshotCache) {
+      const res = await fetch('/api/concorrentes');
+      if (res.ok) concorrentesSnapshotCache = await res.json();
+    }
+    if (!concorrentesHistoricoCache) {
+      const res2 = await fetch('/api/concorrentes?action=historico_concorrentes');
+      if (res2.ok) concorrentesHistoricoCache = await res2.json();
+    }
+    renderConcorrentes(concorrentesSnapshotCache, concorrentesHistoricoCache);
+    if (concorrentesHistoricoCache) {
+      statusEl.textContent = concorrentesHistoricoCache.datas.length + ' dia(s) registrados';
+    }
+  } catch (err) {
+    el.innerHTML = '<div class="error">Falha ao carregar concorrentes: ' + err.message + '</div>';
+    statusEl.textContent = 'erro';
+  }
+}
+
+function renderConcorrentes(snapshot, historico) {
+  const el = document.getElementById('content');
+  const concorrentesAtuais = (snapshot && snapshot.concorrentes) || [];
+  const historicoMap = (historico && historico.concorrentes) || {};
+  const datas = (historico && historico.datas) || [];
+
+  const nomes = new Set([
+    ...concorrentesAtuais.map(c => c.nome),
+    ...Object.keys(historicoMap),
+  ]);
+
+  if (nomes.size === 0) {
+    el.innerHTML = '<div class="empty">Nenhum concorrente coletado ainda.</div>';
+    return;
+  }
+
+  let html = '';
+  nomes.forEach(nome => {
+    const compAtual = concorrentesAtuais.find(c => c.nome === nome);
+    const produtosAtuais = compAtual ? compAtual.produtos : [];
+    const produtosHist = historicoMap[nome] || {};
+    const nomesProdutoHist = Object.keys(produtosHist);
+
+    html += `<div class="cat-block">
+      <h2 class="cat-title">${nome}</h2>
+      <div class="table-card" style="margin-bottom:16px;">
+        <h3>Anúncios (snapshot atual)</h3>
+        ${renderTable(produtosAtuais)}
+      </div>`;
+
+    if (nomesProdutoHist.length > 0) {
+      html += `<div class="hist-controls"><span>Ranking por dia · ${datas.length} dia(s)</span></div>
+      <div class="hist-table-wrap">
+        <table class="hist">
+          <thead><tr><th>Produto</th>`;
+      datas.forEach(d => html += `<th class="num">${fmtDiaCurto(d)}</th>`);
+      html += '</tr></thead><tbody>';
+
+      const ultimaData = datas[datas.length - 1];
+      nomesProdutoHist.sort((a, b) => {
+        const posA = produtosHist[a][ultimaData];
+        const posB = produtosHist[b][ultimaData];
+        if (posA === undefined) return 1;
+        if (posB === undefined) return -1;
+        return posA - posB;
+      });
+
+      nomesProdutoHist.forEach(produto => {
+        html += `<tr><td>${produto}</td>`;
+        datas.forEach(d => {
+          const pos = produtosHist[produto][d];
+          html += `<td class="num">${pos !== undefined ? pos : '—'}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+    }
+
+    html += '</div>';
   });
 
   el.innerHTML = html;
